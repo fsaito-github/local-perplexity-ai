@@ -71,3 +71,14 @@ desktop.ini
 # Temporary files
 *.tmp
 *.temp
+
+# Development documentation (internal use)
+DONE.md
+IMPLEMENTATION_COMPLETE.md
+INDEX.md
+PLANO_SIMPLIFICACAO.md
+README_OLD.md
+REFACTORING_SUMMARY.md
+
+# Windows batch files (optional - uncomment if needed)
+# *.bat
