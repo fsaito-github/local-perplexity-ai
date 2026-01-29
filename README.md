@@ -175,14 +175,6 @@ poetry install
 # poetry shell
 ```
 
----
-
-## English Article (Microsoft style)
-
-If you want an English, Microsoft Learn-style write-up of how this repo uses **Foundry Local** + **LangGraph** to build a Perplexity-style local research assistant, see:
-
-- [ARTICLE_FOUNDRY_LOCAL_PERPLEXITY.md](ARTICLE_FOUNDRY_LOCAL_PERPLEXITY.md)
-
 ### 2️⃣ Baixar Modelos
 
 ```bash

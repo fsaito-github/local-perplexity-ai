@@ -1,204 +1,193 @@
-# Build a local Perplexity-style research assistant with Azure AI Foundry Local and LangGraph
+# Build a Local Research Assistant with Azure AI Foundry Local and LangGraph
 
-This article explains how this repository uses **Azure AI Foundry Local** and **LangGraph** to build a Perplexity-style question answering workflow that runs on your machine.
+In this tutorial, you build a local research assistant that answers questions by searching the web and synthesizing results using Azure AI Foundry Local.
 
-> [!NOTE]
-> This project is **inspired by** Perplexity’s user experience (web search + synthesis). It is **not affiliated with Perplexity**.
+The solution runs large language models (LLMs) entirely on your local machine while using an external web search API for retrieval.
 
-## What you’ll build
+The application demonstrates a Perplexity-style question-answering workflow (query planning, parallel research, and synthesis). It is not affiliated with Perplexity.
 
-You’ll run a local research assistant that:
+## What You'll Learn
 
-- Turns one user question into 3–5 focused search queries.
-- Searches the web (via Tavily) and extracts page content.
-- Summarizes each source with a local LLM served by Foundry Local.
-- Produces a final answer that includes numbered citations.
+By completing this tutorial, you will learn how to:
 
-## Architecture at a glance
+- Run LLMs locally by using Azure AI Foundry Local
+- Expose local models through an OpenAI-compatible API
+- Orchestrate multi-step AI workflows with LangGraph
+- Combine local inference with external web search
+- Build a simple research assistant user interface with Streamlit
 
-The solution is split into three layers:
+## Architecture Overview
 
-- **UI**: Streamlit app (entry point in `perplexity.py`).
-- **Orchestration**: LangGraph state machine (query planning → parallel research → final writing).
-- **Models**: Local LLMs served from Azure AI Foundry Local (OpenAI-compatible `/v1/chat/completions` API).
+The solution is organized into three logical layers:
 
-A typical request flows like this:
+### 1. Application Layer (UI)
 
-1. **Build queries** (LLM)
-2. **Parallel web research** (Tavily search + extract)
-3. **Summarize sources** (LLM)
-4. **Write final answer** (LLM) + append **References**
+- Streamlit web app
+- Accepts a user question
+- Displays the synthesized answer with numbered citations
+
+### 2. Orchestration Layer
+
+- LangGraph state machine
+- Controls the research workflow:
+  - Query planning
+  - Parallel web research
+  - Summarization
+  - Final response writing
+
+### 3. Model Layer
+
+- Local LLMs served by Azure AI Foundry Local
+- Accessed through an OpenAI-compatible REST API
+- No model inference is executed in the cloud
+
+## How the Research Workflow Works
+
+1. The user enters a research question.
+2. A local LLM generates 3–5 search queries.
+3. Each query is executed in parallel using the Tavily Search API.
+4. Raw web content is extracted and truncated to stay within prompt limits.
+5. Each source is summarized locally using Foundry Local.
+6. A final local LLM synthesizes the summaries into a single answer.
+7. The response includes numbered citations linked to the original sources.
 
 ## Prerequisites
 
-- Windows 10/11
-- Python 3.11+
+Before you begin, make sure you have:
+
+- A Windows 10 or Windows 11 device
+- Python 3.10 or later
 - Azure AI Foundry Local installed
-- Disk space for models (several GB)
-- A Tavily API key (required for web search)
+- Sufficient disk space for local models (several GB)
+- A Tavily API key for web search
 
-## Step 1: Install Azure AI Foundry Local (Windows)
+> **Note:** After models are downloaded, inference runs locally and does not require an internet connection.
 
-If you don’t already have it installed, you can use WinGet:
+## Step 1: Install Azure AI Foundry Local
+
+Install Foundry Local by using winget:
 
 ```powershell
-winget install Microsoft.AzureAIFoundryLocal
+winget install Microsoft.FoundryLocal
 ```
 
-Verify the CLI is available:
+Verify the installation:
 
 ```powershell
 foundry --version
 ```
 
-## Step 2: Download local models
+If the installation succeeded, the command returns the Foundry Local version number.
 
-This project is configured to use two models (one for “fast” tasks and another for reasoning-style output). You can download the model IDs used by default in `config.py`.
+## Step 2: Download Local Models
 
-Example:
+This project uses two different models:
+
+- A fast, lightweight model for query generation and summarization
+- A reasoning-focused model for final answer synthesis
+
+Download the models configured in the project:
 
 ```powershell
-foundry models download Phi-4-mini-instruct-generic-gpu:5
-foundry models download deepseek-r1-distill-qwen-7b-generic-gpu:3
+foundry model download <model-id-1>
+foundry model download <model-id-2>
 ```
 
-> [!TIP]
-> If you don’t have a GPU, you can still run locally, but it may be slow. Consider switching to CPU-friendly model variants (and then update `LLM_MODEL` / `REASONING_MODEL` in `config.py`).
+> **Tip:** Model availability and performance depend on your hardware (CPU, GPU, or NPU). Use `foundry model list` to view supported models on your system.
 
-## Step 3: Start the Foundry Local server
+## Step 3: Start the Foundry Local Service
 
-On Windows, this repo includes a helper script:
+Start the local model service on a specific port:
 
-```bat
-start_foundry.bat
+```powershell
+foundry service start --port 52576
 ```
 
-That script starts:
+By default, the service listens on `http://127.0.0.1:52576`.
 
-```bat
-foundry serve --port 52576
-```
+Foundry Local exposes an OpenAI-compatible API surface that the application uses for chat completions.
 
-> [!IMPORTANT]
-> The app reads the Foundry endpoint from the `FOUNDRY_ENDPOINT` environment variable (or defaults in `config.py`). Make sure the port in `FOUNDRY_ENDPOINT` matches the port you start Foundry on.
->
-> - If you start Foundry on port `52576`, set `FOUNDRY_ENDPOINT=http://127.0.0.1:52576`.
-> - If you use a different port, update the endpoint accordingly.
+## Step 4: Configure Environment Variables
 
-## Step 4: Configure environment variables
+Create a `.env` file in the project root:
 
-Create a `.env` file (or export environment variables) with at least:
-
-```dotenv
-# Foundry Local server
+```bash
 FOUNDRY_ENDPOINT=http://127.0.0.1:52576
 FOUNDRY_API_KEY=local
-
-# Web search
-TAVILY_API_KEY=your_tavily_key_here
+TAVILY_API_KEY=<your-tavily-api-key>
 ```
 
-### Why these settings matter
+- `FOUNDRY_ENDPOINT` points to the local Foundry Local service
+- `FOUNDRY_API_KEY` is required by the API client, even for local calls
+- `TAVILY_API_KEY` enables web search and content extraction
 
-- `FOUNDRY_ENDPOINT` is used by the LLM wrapper (`llm_client.py`) to call `POST {FOUNDRY_ENDPOINT}/v1/chat/completions`.
-- `FOUNDRY_API_KEY` is sent as an `api-key` HTTP header.
-- `TAVILY_API_KEY` enables web search and extraction.
+## Step 5: Install Python Dependencies
 
-## Step 5: Install Python dependencies
-
-This repository uses Poetry. From the project folder:
+The project uses Poetry for dependency management.
 
 ```powershell
 poetry install
+poetry shell
 ```
 
-If you prefer a virtual environment:
+This installs LangGraph, Streamlit, and supporting libraries.
+
+## Step 6: Run the Application
+
+Start the Streamlit app:
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\activate
-poetry install
+streamlit run app.py
 ```
 
-## Step 6: Run the app
+In the browser interface:
 
-Start the Streamlit UI:
+1. Enter a research question.
+2. The app generates search queries.
+3. Sources are retrieved and summarized.
+4. A synthesized answer with citations is displayed.
 
-```powershell
-streamlit run perplexity.py
-```
+## Customization Options
+You can customize the solution in several ways:
 
-Enter a question, select **Pesquisar**, and the workflow will:
+Swap models by updating model IDs in config.py
+Adjust generation behavior:
 
-- Generate search queries.
-- Fetch and summarize sources.
-- Produce a final response with citations.
+MAX_TOKENS
+TEMPERATURE
+TIMEOUT
 
-## How the workflow works (LangGraph)
 
-The graph is built around a state object (see `schemas.py`) and three main nodes:
+Change prompt templates:
 
-- **build_first_queries**
-  - Uses a structured JSON response format (Pydantic schema) to reliably produce 3–5 queries.
-  - Prompt templates live in `prompts.py`.
+Query planning
+Source summarization
+Final synthesis
 
-- **single_search**
-  - Uses Tavily to search and extract content from sources.
-  - Truncates raw content to `MAX_RAW_CHARS` (from `config.py`) to keep prompts bounded.
-  - Summarizes each source with the LLM.
 
-- **final_writer**
-  - Formats the per-source summaries and asks the model to write a cohesive final answer.
-  - Appends a reference list (e.g., `[1] - [Title](URL)`), so users can verify sources.
+Tune web search:
 
-Concurrency is achieved by spawning one researcher task per query using `langgraph.types.Send`.
+Number of results per query
+Maximum extracted content length
 
-## Customization guide
 
-### Swap models
 
-Update the model IDs in `config.py`:
 
-- `LLM_MODEL` for query generation + summarization
-- `REASONING_MODEL` for longer-form synthesis
+Troubleshooting
 
-### Tune quality and speed
+### The app cannot connect to Foundry Local
 
-Key knobs in `config.py`:
+- Verify that Foundry Local is running.
+- Confirm that `FOUNDRY_ENDPOINT` matches the service port.
+- Increase request timeouts for slower machines.
 
-- `LLM_MAX_TOKENS`, `LLM_TEMPERATURE`, `LLM_TIMEOUT`
-- `REASONING_MAX_TOKENS`, `REASONING_TEMPERATURE`, `REASONING_TIMEOUT`
-- `MAX_RAW_CHARS` (how much page content is sent to the model)
+### A model is not found
 
-### Change prompting
+- Run `foundry model list`.
+- Download the model ID specified in the configuration file.
 
-Edit prompt templates in `prompts.py`:
+### Web search returns no results
 
-- `build_queries` to change how queries are generated.
-- `resume_search` to change summarization format.
-- `build_final_response` to change final answer structure and citation requirements.
+- Verify that `TAVILY_API_KEY` is set.
+- Increase the maximum number of search results per query.
 
-## Troubleshooting
-
-### “Connection refused” or timeouts
-
-- Confirm Foundry Local is running.
-- Confirm `FOUNDRY_ENDPOINT` matches the running port (default: `52576`).
-- Increase `LLM_TIMEOUT` / `REASONING_TIMEOUT` in `config.py` for slower machines.
-
-### “Model not found”
-
-- List installed models: `foundry model ls`
-- Download the configured model IDs.
-
-### Web search returns empty results
-
-- Verify `TAVILY_API_KEY` is set.
-- Try increasing `TAVILY_MAX_RESULTS` (in `config.py`) to pull more sources per query.
-
-## Next steps
-
-- Add caching (per-query and per-URL) to speed up repeated questions.
-- Increase parallelism and fetch more sources per query.
-- Add a local document indexer (so you can search your own files offline).
-- Add evaluation prompts to self-check citations and factual consistency.
