@@ -200,10 +200,10 @@ def final_writer(state: ReportState) -> dict[str, str]:
         search_results=search_results
     )
     
-    response = llm.invoke(prompt)
+    response = reasoning_llm.invoke(prompt)
     final_response = f"{response.content}\n\nReferences:\n{references}"
     
-    logger.info(f"✅ Resposta final gerada: {len(response.content)} chars")
+    logger.info(f"✅ Final response generated: {len(response.content)} chars")
     
     return {"final_response": final_response}
 
@@ -226,26 +226,26 @@ graph = builder.compile()
 
 if __name__ == "__main__":
     st.title(STREAMLIT_TITLE)
-    user_input = st.text_input("Qual a sua pergunta?", 
+    user_input = st.text_input("What's your question?", 
                                value=DEFAULT_QUERY)
 
-    if st.button("Pesquisar"):
-        with st.status("Gerando resposta", expanded=True):
+    if st.button("Search"):
+        with st.status("Generating response", expanded=True):
             try:
                 logger.info(f"Iniciando busca para: {user_input}")
                 output = graph.invoke({"user_input": user_input})
                 
                 if "final_response" in output:
                     final_response = output["final_response"]
-                    st.success("✅ Resposta gerada com sucesso!")
+                    st.success("✅ Response generated successfully!")
                     st.markdown(final_response)
-                    logger.info("✅ Resposta gerada com sucesso")
+                    logger.info("✅ Response generated successfully")
                 else:
-                    st.error("❌ Resposta não contém 'final_response'")
+                    st.error("❌ Response does not contain 'final_response'")
                     st.write(output)
-                    logger.error("Resposta não contém 'final_response'")
+                    logger.error("Response does not contain 'final_response'")
             except Exception as e:
-                st.error(f"❌ Erro ao gerar resposta: {str(e)}")
+                st.error(f"❌ Error generating response: {str(e)}")
                 import traceback
                 st.code(traceback.format_exc())
-                logger.error(f"Erro ao gerar resposta: {str(e)}", exc_info=True)
+                logger.error(f"Error generating response: {str(e)}", exc_info=True)

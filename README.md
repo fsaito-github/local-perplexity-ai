@@ -14,6 +14,7 @@ Uma implementação open-source do **Perplexity AI** funcionando 100% offline co
 - [Requisitos](#-requisitos)
 - [Configuração](#-configuração)
 - [API e Integração](#-api-e-integração)
+- [English Article (Microsoft style)](#english-article-microsoft-style)
 
 ---
 
@@ -164,23 +165,23 @@ class ReportState:
 ### 1️⃣ Instalação
 
 ```bash
-# Clonar repositório
+# Entrar na pasta do projeto
 cd "Local Perplexity AI"
 
-# Criar ambiente virtual
-python -m venv .venv
-
-# Ativar ambiente
-# Windows:
-.venv\Scripts\activate
-# Linux/Mac:
-source .venv/bin/activate
-
-# Instalar dependências
+# Instalar dependências (Poetry cria/gerencia o venv automaticamente)
 poetry install
-# ou
-pip install -r requirements.txt
+
+# (Opcional) Abrir um shell dentro do ambiente do Poetry
+# poetry shell
 ```
+
+---
+
+## English Article (Microsoft style)
+
+If you want an English, Microsoft Learn-style write-up of how this repo uses **Foundry Local** + **LangGraph** to build a Perplexity-style local research assistant, see:
+
+- [ARTICLE_FOUNDRY_LOCAL_PERPLEXITY.md](ARTICLE_FOUNDRY_LOCAL_PERPLEXITY.md)
 
 ### 2️⃣ Baixar Modelos
 
@@ -193,11 +194,9 @@ foundry models download deepseek-r1-distill-qwen-7b-generic-gpu:3
 ### 3️⃣ Configurar .env
 
 ```bash
-# Copiar template
-cp .env.example .env
-
-# Editar com suas credenciais
-nano .env
+# Crie/edite o arquivo .env com suas credenciais
+# Windows: notepad .env
+# Linux/Mac: nano .env
 ```
 
 **Variáveis necessárias:**
@@ -221,17 +220,17 @@ foundry serve --port 52576
 **Terminal 2: Rodar Aplicação**
 ```bash
 # Com Streamlit (Interface Web)
-streamlit run perplexity.py
+poetry run streamlit run perplexity.py
 
 # Ou com Python direto (para testes)
-python perplexity.py
+poetry run python perplexity.py
 ```
 
 ### 5️⃣ Usar a Interface
 
 1. Abra `http://localhost:8501` no navegador
 2. Digite sua pergunta (ex: "Como funciona um LLM?")
-3. Clique em "Search and Synthesize"
+3. Clique em "Pesquisar"
 4. Aguarde 10-30 segundos (ou 3-5s com GPU)
 5. Veja resposta com citações numeradas
 
@@ -249,8 +248,7 @@ Local Perplexity AI/
 ├── prompts.py              # Templates dos prompts
 ├── utils.py                # Tavily client e helpers
 │
-├── .env                    # Variáveis de ambiente (NÃO COMMITAR)
-├── .env.example            # Template
+├── .env                    # Variáveis de ambiente (não commitar)
 ├── pyproject.toml          # Poetry config
 ├── README.md               # Este arquivo
 ├── IMPLEMENTATION_COMPLETE.md  # Status da implementação
@@ -287,9 +285,9 @@ class ReportState:
 ```
 
 #### 🔗 **perplexity.py** - Pipeline Principal
-- `build_queries_node()` → Gera queries
-- `research_node()` → Busca e resume
-- `final_response_node()` → Resposta final
+- `build_first_queries()` → Gera 3-5 queries
+- `single_search()` → Busca e resume
+- `final_writer()` → Resposta final com referências
 
 ---
 
@@ -379,12 +377,14 @@ async def search(query: str):
 ### Erro: "Connection refused" no Foundry
 
 ```bash
-# Verificar se servidor está rodando
+# Verifique se o servidor está rodando (porta padrão deste projeto)
 foundry serve --port 52576
+```
 
-# Ou reiniciar
-lsof -ti:52576 | xargs kill -9
-foundry serve --port 52576
+No Windows, se você suspeitar que a porta está em uso, verifique com:
+
+```powershell
+netstat -ano | findstr :52576
 ```
 
 ### Erro: "TAVILY_API_KEY not found"
@@ -416,146 +416,10 @@ export TAVILY_API_KEY=your_key_here
 
 ---
 
-## 📜 Licença
-
-MIT License - Veja LICENSE.md
-
 ## 🤝 Contribuições
 
 Contribuições são bem-vindas! Abra uma issue ou PR.
 
 ---
 
-## 📞 Suporte
-
-- GitHub Issues: [Report a bug](https://github.com/your-repo/issues)
-- Discussões: [Community Forum](https://github.com/your-repo/discussions)
-
-**Terminal 2: Rodar aplicação**
-```bash
-streamlit run perplexity.py
-```
-
-Acesse: http://localhost:8501
-
-## 📋 Arquitetura
-
-### Estrutura de Arquivos
-
-```
-├── perplexity.py ............. Aplicação Streamlit principal
-├── config.py ................. Configuração centralizada
-├── llm_client.py ............. Cliente Azure Foundry Local
-├── schemas.py ................ Schemas Pydantic (QueryResult, ReportState)
-├── prompts.py ................ Templates de prompts
-├── utils.py .................. Utilitários (TavilyClient)
-└── pyproject.toml ............ Dependências
-```
-
-### Fluxo de Execução
-
-```
-Pergunta do Usuário
-        ↓
-[build_first_queries] → Gera 3-5 queries
-        ↓
-[spawn_researchers] → Executa buscas em paralelo
-        ↓
-[single_search] → Para cada query:
-    - Busca no Tavily
-    - Extrai conteúdo
-    - Resume com Phi-4
-        ↓
-[final_writer] → Gera resposta final com:
-    - Raciocínio do LLM
-    - Citações [1], [2], etc
-    - Links de referência
-        ↓
-Resposta no Streamlit
-```
-
-## ⚙️ Configuração
-
-Arquivo principal: `config.py`
-
-```python
-# Modelos
-LLM_MODEL = "Phi-4-mini-instruct-generic-gpu:5"
-REASONING_MODEL = "deepseek-r1-distill-qwen-7b-generic-gpu:3"
-
-# Parâmetros
-LLM_MAX_TOKENS = 512
-LLM_TEMPERATURE = 0.7
-MAX_RAW_CHARS = 4000
-
-# Endpoint
-FOUNDRY_ENDPOINT = "http://127.0.0.1:52576"
-```
-
-## 🔧 Troubleshooting
-
-### "Conexão recusada"
-```bash
-# Verifique se Foundry está rodando
-curl http://127.0.0.1:52576/health
-
-# Se não funcionar, inicie o servidor:
-foundry serve --port 52576
-```
-
-### "Modelo não encontrado"
-```bash
-# Liste modelos disponíveis
-foundry model list
-
-# Baixe o modelo necessário
-foundry model download phi-4-mini --device gpu
-```
-
-### "Timeout ao gerar queries"
-Aumente `LLM_TIMEOUT` em `config.py` ou reinicie o Foundry.
-
-## 🎯 Use Cases
-
-- 📚 **Pesquisa**: Encontre informações com sources verificadas
-- 🔬 **Análise Técnica**: Respostas baseadas em documentação
-- 📝 **Escrita**: Citations automáticas com links
-- 🚀 **Desenvolvimento**: Integre em seus projetos
-
-## ✨ Características Principais
-
-✅ **Arquitetura Limpa:**
-- Funções auxiliares bem documentadas
-- Type hints 100% completos
-- Logging estruturado
-
-✅ **Performance Otimizada:**
-- Código refatorado e eficiente
-- Parsing de JSON simplificado
-- Tratamento de erros robusto
-
-## 🤝 Contribuindo
-
-Sugestões de melhorias:
-
-1. **Cache de resultados**: Evitar buscas duplicadas
-2. **UI melhorada**: Dashboard com histórico
-3. **Múltiplos provedores**: Tavily, Perplexity, OpenPerplexity
-4. **Integração**: API REST para usar como backend
-
-## 📄 Licença
-
-MIT
-
-## 🔗 Links Úteis
-
-- [Azure AI Foundry Local](https://azure.microsoft.com/en-us/products/ai-services/ai-foundry)
-- [LangGraph Docs](https://python.langchain.com/docs/langgraph)
-- [Tavily API](https://tavily.com)
-- [Streamlit](https://streamlit.io)
-
----
-
-**Versão:** 2.0  
-**Status:** ✅ Pronto para Produção  
 **Última Atualização:** 28 de janeiro de 2026

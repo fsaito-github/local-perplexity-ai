@@ -21,7 +21,7 @@ echo.
 
 REM Verificar modelos
 echo Verificando modelos...
-foundry model ls | findstr "phi-4-mini deepseek-r1-7b" >nul
+foundry model ls | findstr "Phi-4-mini-instruct deepseek-r1-distill-qwen" >nul
 if %errorlevel% neq 0 (
     echo AVISO: Modelos nao encontrados
     echo Execute: 
@@ -33,9 +33,9 @@ echo [OK] Modelos disponiveis
 echo.
 
 REM Iniciar servidor
-echo Iniciando servidor Foundry na porta 5272...
+echo Iniciando servidor Foundry na porta 52576...
 echo.
-foundry serve --port 5272
+foundry serve --port 52576
 
 REM Se o servidor foi interrompido
 echo.
