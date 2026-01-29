@@ -83,28 +83,28 @@ An open-source implementation of **Perplexity AI** running 100% offline with **A
 
 ### Etapas do Pipeline
 
-#### 1️⃣ **Build Queries** (Geração de Buscas)
-- **Modelo**: Phi-4-mini
-- **Entrada**: Pergunta do usuário
-- **Saída**: Lista de 3-5 queries estruturadas
-- **Prompt**: Agent especializado em planejamento de pesquisa
+#### 1️⃣ **Build Queries** (Query Generation)
+- **Model**: Phi-4-mini
+- **Input**: User question
+- **Output**: List of 3-5 structured queries
+- **Prompt**: Research planning specialist agent
 
-#### 2️⃣ **Spawn Researchers** (Busca Paralela)
-- **Execução**: Paralela usando `langgraph.types.Send`
-- **Ação**: Para cada query, executa busca com Tavily
-- **Resultado**: Múltiplos artigos relevantes
+#### 2️⃣ **Spawn Researchers** (Parallel Search)
+- **Execution**: Parallel using `langgraph.types.Send`
+- **Action**: For each query, executes search with Tavily
+- **Result**: Multiple relevant articles
 
-#### 3️⃣ **Research** (Síntese de Conteúdo)
-- **Modelo**: Phi-4-mini
-- **Entrada**: Conteúdo bruto da web (até 4000 caracteres)
-- **Saída**: Resumo estruturado
-- **Objetivo**: Extrair informações relevantes
+#### 3️⃣ **Research** (Content Synthesis)
+- **Model**: Phi-4-mini
+- **Input**: Raw web content (up to 4000 characters)
+- **Output**: Structured summary
+- **Objective**: Extract relevant information
 
-#### 4️⃣ **Final Response** (Resposta Final)
-- **Modelo**: DeepSeek-R1 (raciocínio profundo)
-- **Entrada**: Todos os resumos das buscas
-- **Saída**: 500-800 palavras com citações [1] [2] etc
-- **Qualidade**: Alta precisão e análise
+#### 4️⃣ **Final Response** (Final Answer)
+- **Model**: DeepSeek-R1 (deep reasoning)
+- **Input**: All search summaries
+- **Output**: 500-800 words with citations [1] [2] etc
+- **Quality**: High precision and analysis
 
 ### Graph State
 
