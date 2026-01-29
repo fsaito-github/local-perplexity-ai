@@ -1,56 +1,56 @@
 # 🌎 Local Perplexity AI
 
-Uma implementação open-source do **Perplexity AI** funcionando 100% offline com **Azure AI Foundry Local** + **LangGraph**. Busca, analisa e sintetiza informações da web com modelos de IA executados localmente.
+An open-source implementation of **Perplexity AI** running 100% offline with **Azure AI Foundry Local** + **LangGraph**. Search, analyze, and synthesize web information with locally executed AI models.
 
 ---
 
-## 📋 Sumário
+## 📋 Table of Contents
 
-- [O Que É](#-o-que-é)
-- [Como Funciona](#-como-funciona-a-arquitetura)
-- [Comparativo com Perplexity Real](#-comparativo-perplexity-ai-vs-local-perplexity-ai)
-- [Como Usar](#-como-usar)
-- [Estrutura do Projeto](#-estrutura-do-projeto)
-- [Requisitos](#-requisitos)
-- [Configuração](#-configuração)
-- [API e Integração](#-api-e-integração)
+- [What It Is](#-what-it-is)
+- [How It Works](#-how-it-works-the-architecture)
+- [Comparison with Perplexity AI](#-comparison-perplexity-ai-vs-local-perplexity-ai)
+- [How to Use](#-how-to-use)
+- [Project Structure](#-project-structure)
+- [Requirements](#-requirements)
+- [Configuration](#-configuration)
+- [API and Integration](#-api-and-integration)
 - [English Article (Microsoft style)](#english-article-microsoft-style)
 
 ---
 
-## ✨ O Que É
+## ✨ What It Is
 
-**Local Perplexity AI** é uma aplicação que replica as funcionalidades do Perplexity AI (motor de busca com IA), mas rodando completamente offline em sua máquina. 
+**Local Perplexity AI** is an application that replicates Perplexity AI's functionalities (AI-powered search engine), but running completely offline on your machine. 
 
-### Fluxo Principal
+### Main Flow
 
 ```
-📝 Pergunta do Usuário
+📝 User Question
     ↓
-🔍 Gera 3-5 Queries de Busca (LLM)
+🔍 Generate 3-5 Search Queries (LLM)
     ↓
-🌐 Busca Resultados na Web (Tavily)
+🌐 Search Web Results (Tavily)
     ↓
-📰 Extrai Conteúdo de Cada Página
+📰 Extract Content from Each Page
     ↓
-✏️ Resume Cada Resultado (LLM)
+✏️ Summarize Each Result (LLM)
     ↓
-💭 Gera Resposta Final com Raciocínio (LLM)
+💭 Generate Final Response with Reasoning (LLM)
     ↓
-📌 Formata com Citações Numeradas
+📌 Format with Numbered Citations
     ↓
-✅ Resposta Sintetizada
+✅ Synthesized Response
 ```
 
-### Funcionalidades
+### Features
 
-✅ **Geração Automática de Queries** - Transforma 1 pergunta em 3-5 buscas relevantes  
-✅ **Busca Web em Tempo Real** - Busca atual com Tavily API  
-✅ **Síntese de Conteúdo** - Resume páginas web automaticamente  
-✅ **Raciocínio Estruturado** - Usa DeepSeek-R1 para análise profunda  
-✅ **Citações Numeradas** - Todas as informações referenciadas  
-✅ **Interface Web** - Streamlit para interação amigável  
-✅ **100% Offline** - Modelos rodando localmente  
+✅ **Automatic Query Generation** - Transforms 1 question into 3-5 relevant searches  
+✅ **Real-Time Web Search** - Current search with Tavily API  
+✅ **Content Synthesis** - Automatically summarizes web pages  
+✅ **Structured Reasoning** - Uses DeepSeek-R1 for deep analysis  
+✅ **Numbered Citations** - All information referenced  
+✅ **Web Interface** - Streamlit for friendly interaction  
+✅ **100% Offline** - Models running locally  
 
 ---
 
@@ -106,101 +106,101 @@ Uma implementação open-source do **Perplexity AI** funcionando 100% offline co
 - **Saída**: 500-800 palavras com citações [1] [2] etc
 - **Qualidade**: Alta precisão e análise
 
-### Estado do Grafo
+### Graph State
 
 ```python
 class ReportState:
-    user_input: str              # "Como funciona um LLM?"
-    queries: List[str]           # ["Como funcionam LLMs?", "Arquitetura transformer...", ...]
+    user_input: str              # "How does an LLM work?"
+    queries: List[str]           # ["How do LLMs work?", "Transformer architecture...", ...]
     queries_results: List[QueryResult]  # [{title, url, resume}, ...]
-    final_response: str          # Resposta final sintetizada
+    final_response: str          # Synthesized final response
 ```
 
 ---
 
-## 🔄 Comparativo: Perplexity AI vs Local Perplexity AI
+## 🔄 Comparison: Perplexity AI vs Local Perplexity AI
 
-| Aspecto | Perplexity AI | Local Perplexity AI |
+| Aspect | Perplexity AI | Local Perplexity AI |
 |---------|---------------|-------------------|
-| **Modelo** | Modelos proprietários (Claude, etc) | Phi-4 + DeepSeek-R1 (Open Source) |
-| **Execução** | Cloud (servidores remotos) | Local (sua máquina) |
-| **Privacidade** | Dados enviados para servidor | 100% privado, sem envio de dados |
-| **Custo** | Assinatura paga | Grátis (computação local) |
-| **Internet** | Necessária | Necessária apenas para Tavily Search |
-| **Velocidade** | Rápido (servidores otimizados) | Depende do hardware (GPUs recomendadas) |
-| **Personalização** | Limitada | Total controle do código |
-| **Latência** | ~3-5 segundos | ~10-30 segundos (CPU), ~3-5 segundos (GPU) |
-| **Formato Resposta** | Texto sintetizado | Texto + citações numeradas |
-| **Raciocínio** | Implícito | Explícito (DeepSeek-R1 mostra o pensamento) |
-| **Customização** | API/Web | Código aberto, modificável |
+| **Model** | Proprietary models (Claude, etc) | Phi-4 + DeepSeek-R1 (Open Source) |
+| **Execution** | Cloud (remote servers) | Local (your machine) |
+| **Privacy** | Data sent to server | 100% private, no data sent |
+| **Cost** | Paid subscription | Free (local computation) |
+| **Internet** | Required | Required only for Tavily Search |
+| **Speed** | Fast (optimized servers) | Depends on hardware (GPUs recommended) |
+| **Personalization** | Limited | Full code control |
+| **Latency** | ~3-5 seconds | ~10-30 seconds (CPU), ~3-5 seconds (GPU) |
+| **Response Format** | Synthesized text | Text + numbered citations |
+| **Reasoning** | Implicit | Explicit (DeepSeek-R1 shows thinking) |
+| **Customization** | API/Web | Open source, modifiable |
 
-### 🎯 Diferenças Técnicas Principais
+### 🎯 Key Technical Differences
 
-#### ✅ Vantagens do Local Perplexity AI
-1. **Privacidade Total** - Nenhum dado sai da sua máquina
-2. **Sem Taxa de API** - Computação local gratuita
-3. **Completamente Customizável** - Modifique prompts, modelos, lógica
-4. **Funciona Offline** - Após baixar modelos, busca funciona localmente
-5. **Código Aberto** - Aprenda e estenda o projeto
+#### ✅ Advantages of Local Perplexity AI
+1. **Total Privacy** - No data leaves your machine
+2. **No API Fees** - Free local computation
+3. **Fully Customizable** - Modify prompts, models, logic
+4. **Works Offline** - After downloading models, search works locally
+5. **Open Source** - Learn and extend the project
 
-#### ⚠️ Limitações
-1. **Poder Computacional** - Depende do seu hardware (recomenda GPU)
-2. **Velocidade de Resposta** - Mais lenta que servidores em nuvem
-3. **Qualidade dos Modelos** - Phi-4 é bom mas menor que Claude
-4. **Gerenciamento de Modelos** - Requer 10GB de armazenamento
-5. **Suporte** - Comunidade, não empresa dedicada
+#### ⚠️ Limitations
+1. **Computational Power** - Depends on your hardware (GPU recommended)
+2. **Response Speed** - Slower than cloud servers
+3. **Model Quality** - Phi-4 is good but smaller than Claude
+4. **Model Management** - Requires 10GB of storage
+5. **Support** - Community, not dedicated company
 
 ---
 
-## 🚀 Como Usar
+## 🚀 How to Use
 
-### Pré-requisitos
+### Prerequisites
 
-- **Python**: 3.11 ou superior
+- **Python**: 3.11 or higher
 - **Azure AI Foundry Local**: v0.8.119+
-- **Espaço em Disco**: ~10 GB
-- **RAM**: 16 GB recomendado
-- **GPU**: Opcional (RTX 3060+ recomendado para velocidade)
+- **Disk Space**: ~10 GB
+- **RAM**: 16 GB recommended
+- **GPU**: Optional (RTX 3060+ recommended for speed)
 
-### 1️⃣ Instalação
+### 1️⃣ Installation
 
 ```bash
-# Entrar na pasta do projeto
+# Navigate to project folder
 cd "Local Perplexity AI"
 
-# Instalar dependências (Poetry cria/gerencia o venv automaticamente)
+# Install dependencies (Poetry automatically creates/manages venv)
 poetry install
 
-# (Opcional) Abrir um shell dentro do ambiente do Poetry
+# (Optional) Open a shell inside Poetry environment
 # poetry shell
 ```
 
-### 2️⃣ Baixar Modelos
+### 2️⃣ Download Models
 
 ```bash
-# Usar Azure AI Foundry para download
+# Use Azure AI Foundry for download
 foundry models download Phi-4-mini-instruct-generic-gpu:5
 foundry models download deepseek-r1-distill-qwen-7b-generic-gpu:3
 ```
 
-### 3️⃣ Configurar .env
+### 3️⃣ Configure .env
 
 ```bash
-# Crie/edite o arquivo .env com suas credenciais
+# Create/edit .env file with your credentials
 # Windows: notepad .env
 # Linux/Mac: nano .env
 ```
 
-**Variáveis necessárias:**
+**Required variables:**
 ```bash
 FOUNDRY_ENDPOINT=http://127.0.0.1:52576
 FOUNDRY_API_KEY=local
-TAVILY_API_KEY=your_tavily_key_here  # Obter em tavily.com
+TAVILY_API_KEY=your_tavily_key_here  # Get from tavily.com
 ```
 
-### 4️⃣ Executar
+### 4️⃣ Run
 
-**Terminal 1: Iniciar Servidor Foundry**
+**Terminal 1: Start Foundry Server**
 ```bash
 # Windows
 start_foundry.bat
@@ -209,65 +209,65 @@ start_foundry.bat
 foundry serve --port 52576
 ```
 
-**Terminal 2: Rodar Aplicação**
+**Terminal 2: Run Application**
 ```bash
-# Com Streamlit (Interface Web)
+# With Streamlit (Web Interface)
 poetry run streamlit run perplexity.py
 
-# Ou com Python direto (para testes)
+# Or with Python directly (for testing)
 poetry run python perplexity.py
 ```
 
-### 5️⃣ Usar a Interface
+### 5️⃣ Use the Interface
 
-1. Abra `http://localhost:8501` no navegador
-2. Digite sua pergunta (ex: "Como funciona um LLM?")
-3. Clique em "Pesquisar"
-4. Aguarde 10-30 segundos (ou 3-5s com GPU)
-5. Veja resposta com citações numeradas
+1. Open `http://localhost:8501` in browser
+2. Enter your question (e.g., "How does an LLM work?")
+3. Click "Search"
+4. Wait 10-30 seconds (or 3-5s with GPU)
+5. See response with numbered citations
 
 ---
 
-## 📁 Estrutura do Projeto
+## 📁 Project Structure
 
 ```
 Local Perplexity AI/
 │
 ├── perplexity.py           # Main: LangGraph + Streamlit
-├── llm_client.py           # Client Azure AI Foundry Local
-├── config.py               # Configuração centralizada
+├── llm_client.py           # Azure AI Foundry Local Client
+├── config.py               # Centralized configuration
 ├── schemas.py              # Pydantic schemas (QueryResult, ReportState)
-├── prompts.py              # Templates dos prompts
-├── utils.py                # Tavily client e helpers
+├── prompts.py              # Prompt templates
+├── utils.py                # Tavily client and helpers
 │
-├── .env                    # Variáveis de ambiente (não commitar)
+├── .env                    # Environment variables (do not commit)
 ├── pyproject.toml          # Poetry config
-├── README.md               # Este arquivo
-├── IMPLEMENTATION_COMPLETE.md  # Status da implementação
+├── README.md               # This file
+├── IMPLEMENTATION_COMPLETE.md  # Implementation status
 │
-└── __pycache__/            # Cache Python
+└── __pycache__/            # Python cache
 ```
 
-### Arquivos Importantes
+### Important Files
 
-#### 🔧 **config.py** - Configuração Centralizada
+#### 🔧 **config.py** - Centralized Configuration
 ```python
-# Modelos
+# Models
 LLM_MODEL = "Phi-4-mini-instruct-generic-gpu:5"
 REASONING_MODEL = "deepseek-r1-distill-qwen-7b-generic-gpu:3"
 
-# Limites
+# Limits
 LLM_MAX_TOKENS = 512
 REASONING_MAX_TOKENS = 512
 MAX_RAW_CHARS = 4000
 ```
 
-#### 📝 **schemas.py** - Estruturas de Dados
+#### 📝 **schemas.py** - Data Structures
 ```python
 class QueryResult:
-    title: str      # "Como funciona um Transformer"
+    title: str      # "How a Transformer works"
     url: str        # "https://..."
-    resume: str     # "Um Transformer é..."
+    resume: str     # "A Transformer is..."
 
 class ReportState:
     user_input: str
@@ -276,64 +276,64 @@ class ReportState:
     final_response: str
 ```
 
-#### 🔗 **perplexity.py** - Pipeline Principal
-- `build_first_queries()` → Gera 3-5 queries
-- `single_search()` → Busca e resume
-- `final_writer()` → Resposta final com referências
+#### 🔗 **perplexity.py** - Main Pipeline
+- `build_first_queries()` → Generates 3-5 queries
+- `single_search()` → Search and summarize
+- `final_writer()` → Final response with references
 
 ---
 
-## ⚙️ Configuração Avançada
+## ⚙️ Advanced Configuration
 
-### Alterar Modelos
+### Change Models
 
-Edite `config.py`:
+Edit `config.py`:
 ```python
-# Usar outro modelo menor
+# Use a smaller model
 LLM_MODEL = "Phi-3.5-mini-instruct-generic-gpu:1"
 
-# Ou modelo maior para melhor qualidade
+# Or a larger model for better quality
 REASONING_MODEL = "Llama-2-70b-chat-hf:1"
 ```
 
-### Ajustar Prompts
+### Adjust Prompts
 
-Edite `prompts.py` para customizar comportamento:
+Edit `prompts.py` to customize behavior:
 ```python
 build_queries = """
 Your role is to generate 5 very specific technical queries...
 """
 ```
 
-### Aumentar/Diminuir Tokens
+### Increase/Decrease Tokens
 
 ```python
-LLM_MAX_TOKENS = 1024  # Respostas mais longas
+LLM_MAX_TOKENS = 1024  # Longer responses
 REASONING_MAX_TOKENS = 2048
 ```
 
 ---
 
-## 🔌 API e Integração
+## 🔌 API and Integration
 
-### Usar como Biblioteca Python
+### Use as Python Library
 
 ```python
 from perplexity import ReportState
 from llm_client import AzureFoundryLocalLLM
 from schemas import QueryResult
 
-# Inicializar
+# Initialize
 llm = AzureFoundryLocalLLM(model="Phi-4-mini-instruct-generic-gpu:5")
 
-# Criar estado
-state = ReportState(user_input="O que é um LLM?")
+# Create state
+state = ReportState(user_input="What is an LLM?")
 
-# Usar pipeline
-# ... (chamar nodes do grafo)
+# Use pipeline
+# ... (call graph nodes)
 ```
 
-### Integrar com FastAPI
+### Integrate with FastAPI
 
 ```python
 from fastapi import FastAPI
@@ -352,7 +352,7 @@ async def search(query: str):
 
 ## 📊 Benchmarks
 
-### Tempo de Resposta (em segundos)
+### Response Time (in seconds)
 
 | Hardware | Query Gen | Search | Summary | Final | **Total** |
 |----------|-----------|--------|---------|-------|-----------|
@@ -360,45 +360,45 @@ async def search(query: str):
 | GPU RTX 3060 | 1.2s | 3.0s | 3.5s | 4.8s | **12.5s** |
 | GPU A100 | 0.4s | 3.0s | 1.2s | 1.8s | **6.4s** |
 
-*Nota: Tempo de busca é fixo (Tavily API). Outros tempos variam com hardware.*
+*Note: Search time is fixed (Tavily API). Other times vary with hardware.*
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Erro: "Connection refused" no Foundry
+### Error: "Connection refused" on Foundry
 
 ```bash
-# Verifique se o servidor está rodando (porta padrão deste projeto)
+# Verify server is running (default port for this project)
 foundry serve --port 52576
 ```
 
-No Windows, se você suspeitar que a porta está em uso, verifique com:
+On Windows, if you suspect the port is in use, check with:
 
 ```powershell
 netstat -ano | findstr :52576
 ```
 
-### Erro: "TAVILY_API_KEY not found"
+### Error: "TAVILY_API_KEY not found"
 
 ```bash
-# Adicionar no .env
+# Add to .env
 TAVILY_API_KEY=your_key_here
 
-# Ou exportar
+# Or export
 export TAVILY_API_KEY=your_key_here
 ```
 
-### Resposta Muito Lenta
+### Response Too Slow
 
-1. Verificar GPU: `nvidia-smi`
-2. Aumentar RAM alocada para Foundry
-3. Usar modelo menor (Phi-3.5)
-4. Reduzir `MAX_RAW_CHARS`
+1. Check GPU: `nvidia-smi`
+2. Increase RAM allocated to Foundry
+3. Use smaller model (Phi-3.5)
+4. Reduce `MAX_RAW_CHARS`
 
 ---
 
-## 📚 Recursos
+## 📚 Resources
 
 - [LangGraph Documentation](https://python.langchain.com/docs/langgraph)
 - [Azure AI Foundry Local](https://github.com/Azure/ai-foundry)
@@ -408,10 +408,10 @@ export TAVILY_API_KEY=your_key_here
 
 ---
 
-## 🤝 Contribuições
+## 🤝 Contributions
 
-Contribuições são bem-vindas! Abra uma issue ou PR.
+Contributions are welcome! Open an issue or PR.
 
 ---
 
-**Última Atualização:** 28 de janeiro de 2026
+**Last Update:** January 28, 2026
