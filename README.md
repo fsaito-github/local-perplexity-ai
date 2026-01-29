@@ -54,14 +54,14 @@ An open-source implementation of **Perplexity AI** running 100% offline with **A
 
 ---
 
-## 🏗️ Como Funciona: A Arquitetura
+## 🏭️ How It Works: The Architecture
 
-### Componentes Principais
+### Main Components
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    STREAMLIT INTERFACE                          │
-│                   (Interface do Usuário)                         │
+│                   (User Interface)                              │
 └────────────────────────┬────────────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────────────┐
@@ -81,7 +81,7 @@ An open-source implementation of **Perplexity AI** running 100% offline with **A
      └─→ Azure AI Foundry Local Server
 ```
 
-### Etapas do Pipeline
+### Pipeline Steps
 
 #### 1️⃣ **Build Queries** (Query Generation)
 - **Model**: Phi-4-mini
