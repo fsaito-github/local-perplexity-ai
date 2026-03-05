@@ -8,7 +8,8 @@ from typing import Optional
 from config import (
     LLM_MODEL, LLM_MAX_TOKENS, LLM_TIMEOUT,
     REASONING_MODEL, REASONING_MAX_TOKENS, REASONING_TIMEOUT,
-    MAX_RAW_CHARS, STREAMLIT_TITLE, DEFAULT_QUERY,
+    MAX_RAW_CHARS, MAX_VERIFICATION_RETRIES,
+    STREAMLIT_TITLE, DEFAULT_QUERY,
     setup_logging, validate_config
 )
 from schemas import *
@@ -117,7 +118,9 @@ def _format_references(queries_results: list[QueryResult]) -> str:
 
 # ============================================================================
 # NÓS DO GRAFO LANGGRAPH
-# ============================================================================ 
+# ============================================================================
+
+def build_first_queries(state: ReportState) -> dict:
     """
     Gerar lista de queries de busca a partir da pergunta do usuário.
     
@@ -185,6 +188,7 @@ def single_search(query: str) -> dict[str, list[QueryResult]]:
 def final_writer(state: ReportState) -> dict[str, str]:
     """
     Gerar resposta final usando LLM com base nos resultados de busca.
+    Suporta retry com feedback do verificador.
     
     Args:
         state: Estado da aplicação
@@ -195,30 +199,106 @@ def final_writer(state: ReportState) -> dict[str, str]:
     search_results = _format_search_results(state.queries_results)
     references = _format_references(state.queries_results)
     
+    feedback_section = ""
+    if state.verification_feedback:
+        feedback_section = (
+            f"\n\nIMPORTANT - A previous version of your response was rejected by a verification agent. "
+            f"Please fix the following issues:\n{state.verification_feedback}\n"
+            f"Rewrite the response ensuring ALL claims are directly supported by the search results."
+        )
+    
     prompt = build_final_response.format(
         user_input=state.user_input,
-        search_results=search_results
+        search_results=search_results,
+        verification_feedback=feedback_section
     )
     
     response = reasoning_llm.invoke(prompt)
     final_response = f"{response.content}\n\nReferences:\n{references}"
     
-    logger.info(f"✅ Final response generated: {len(response.content)} chars")
+    retry_info = f" (attempt {state.retry_count + 1})" if state.retry_count > 0 else ""
+    logger.info(f"✅ Final response generated{retry_info}: {len(response.content)} chars")
     
     return {"final_response": final_response}
+
+
+def verify_response(state: ReportState) -> dict:
+    """
+    Verificar se a resposta final contém apenas informações suportadas pelas fontes.
+    
+    Args:
+        state: Estado da aplicação
+        
+    Returns:
+        Dict com resultado da verificação e feedback se necessário
+    """
+    search_results = _format_search_results(state.queries_results)
+    
+    # Extrair apenas o conteúdo da resposta (sem a seção References)
+    response_text = state.final_response
+    if "\n\nReferences:\n" in response_text:
+        response_text = response_text.split("\n\nReferences:\n")[0]
+    
+    prompt = verify_response_prompt.format(
+        final_response=response_text,
+        search_results=search_results
+    )
+    
+    try:
+        verification_llm = reasoning_llm.with_structured_output(VerificationResult)
+        result = verification_llm.invoke(prompt)
+        
+        if result.is_valid:
+            logger.info("✅ Verification passed - response is supported by sources")
+            return {"verification_feedback": None}
+        else:
+            supported = sum(1 for c in result.claims if c.is_supported)
+            total = len(result.claims)
+            logger.warning(
+                f"⚠️ Verification failed - {supported}/{total} claims supported. "
+                f"Retry {state.retry_count + 1}/{MAX_VERIFICATION_RETRIES}"
+            )
+            return {
+                "verification_feedback": result.feedback,
+                "retry_count": state.retry_count + 1
+            }
+    except Exception as e:
+        logger.error(f"Erro na verificação: {e}. Aceitando resposta sem verificação.")
+        return {"verification_feedback": None}
+
+
+def should_retry(state: ReportState) -> str:
+    """
+    Decidir se deve regenerar a resposta ou finalizar.
+    
+    Returns:
+        'final_writer' para regenerar, 'end' para finalizar
+    """
+    if state.verification_feedback is None:
+        return "end"
+    if state.retry_count >= MAX_VERIFICATION_RETRIES:
+        logger.warning(f"⚠️ Max retries ({MAX_VERIFICATION_RETRIES}) reached. Accepting response with issues.")
+        return "end"
+    return "final_writer"
 
 
 builder = StateGraph(ReportState)
 builder.add_node("build_first_queries", build_first_queries)
 builder.add_node("single_search", single_search)
 builder.add_node("final_writer", final_writer)
+builder.add_node("verify_response", verify_response)
 
 builder.add_edge(START, "build_first_queries")
 builder.add_conditional_edges("build_first_queries", 
                               spawn_researchers, 
                               ["single_search"])
 builder.add_edge("single_search", "final_writer")
-builder.add_edge("final_writer", END) 
+builder.add_edge("final_writer", "verify_response")
+builder.add_conditional_edges(
+    "verify_response",
+    should_retry,
+    {"final_writer": "final_writer", "end": END}
+)
 
 graph = builder.compile()
 
@@ -237,7 +317,18 @@ if __name__ == "__main__":
                 
                 if "final_response" in output:
                     final_response = output["final_response"]
-                    st.success("✅ Response generated successfully!")
+                    
+                    retry_count = output.get("retry_count", 0)
+                    verification_feedback = output.get("verification_feedback")
+                    
+                    if retry_count >= MAX_VERIFICATION_RETRIES and verification_feedback:
+                        st.warning(
+                            f"⚠️ Response accepted after {retry_count} verification attempts. "
+                            f"Some claims may not be fully supported by sources."
+                        )
+                    else:
+                        st.success("✅ Response generated and verified!")
+                    
                     st.markdown(final_response)
                     logger.info("✅ Response generated successfully")
                 else:

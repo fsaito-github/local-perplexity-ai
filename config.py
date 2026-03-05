@@ -35,6 +35,11 @@ TAVILY_MAX_RESULTS = 1
 MAX_RAW_CHARS = 4000
 
 # ============================================================================
+# VERIFICATION SETTINGS
+# ============================================================================
+MAX_VERIFICATION_RETRIES = 2
+
+# ============================================================================
 # STREAMLIT SETTINGS
 # ============================================================================
 DEFAULT_QUERY = "How is the process of building a LLM?"
@@ -123,6 +128,7 @@ __all__ = [
     "REASONING_TIMEOUT",
     "TAVILY_MAX_RESULTS",
     "MAX_RAW_CHARS",
+    "MAX_VERIFICATION_RETRIES",
     "DEFAULT_QUERY",
     "STREAMLIT_TITLE",
     "LOG_LEVEL",
